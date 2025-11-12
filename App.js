@@ -934,12 +934,8 @@ export default function App() {
                       return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
                     })() : ''}
                     onChange={(e) => {
-                      const date = new Date(e.target.value);
-                      const formattedDate = date.toLocaleDateString('es-AR', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: 'numeric'
-                      });
+                      const [year, month, day] = e.target.value.split('-');
+                      const formattedDate = `${day}/${month}/${year}`;
                       setDateFrom(formattedDate);
                     }}
                     style={{
@@ -977,12 +973,8 @@ export default function App() {
                       return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
                     })() : ''}
                     onChange={(e) => {
-                      const date = new Date(e.target.value);
-                      const formattedDate = date.toLocaleDateString('es-AR', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: 'numeric'
-                      });
+                      const [year, month, day] = e.target.value.split('-');
+                      const formattedDate = `${day}/${month}/${year}`;
                       setDateTo(formattedDate);
                     }}
                     style={{
