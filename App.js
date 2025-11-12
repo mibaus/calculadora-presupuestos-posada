@@ -181,6 +181,9 @@ class ErrorBoundary extends React.Component {
 }
 
 export default function App() {
+  const [pricePerNight, setPricePerNight] = useState('');
+  const [numberOfNights, setNumberOfNights] = useState('');
+  const [numberOfPeople, setNumberOfPeople] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [discount, setDiscount] = useState(0); // 0, 0.10, 0.15
