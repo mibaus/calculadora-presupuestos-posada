@@ -336,9 +336,9 @@ export default function App() {
     }
   };
 
-  // En primavera y otoño, auto-aplicar el descuento sugerido si no hubo intervención manual
+  // En primavera, auto-aplicar el descuento sugerido si no hubo intervención manual
   useEffect(() => {
-    if ((season === 'spring' || season === 'autumn') && suggestedStayDiscount && !manualDiscountEdited) {
+    if (season === 'spring' && suggestedStayDiscount && !manualDiscountEdited) {
       setDiscount(suggestedStayDiscount / 100);
     }
   }, [season, suggestedStayDiscount, manualDiscountEdited]);
@@ -1041,7 +1041,7 @@ export default function App() {
             {suggestedStayDiscount !== null && suggestedStayDiscount > 0 && (
               <View style={[styles.helperRow, { backgroundColor: seasonalColors.accent, padding: 8, borderRadius: 8, marginBottom: 8 }]}>
                 <Text style={[styles.helperText, { color: seasonalColors.primary, fontWeight: '600' }]}>Descuento por estadía: {suggestedStayDiscount}%</Text>
-                {season === 'summer' || season === 'autumn' ? (
+                {season === 'summer' ? (
                   <TouchableOpacity
                     style={[styles.helperBtn, { backgroundColor: seasonalColors.primary, borderColor: seasonalColors.primary }]}
                     onPress={() => {
