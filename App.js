@@ -833,32 +833,6 @@ export default function App() {
               placeholderTextColor={theme.textSecondary}
             />
 
-            {/* Toggle para mostrar info de cabaña */}
-            {numberOfPeople && (
-              <TouchableOpacity
-                style={[styles.toggleRow, { marginTop: 8, marginBottom: 8 }]}
-                onPress={() => setShowCabinInfo(!showCabinInfo)}
-              >
-                <Text style={[styles.toggleLabel, { color: theme.textSecondary }]}>
-                  Incluir "Cabaña para {numberOfPeople}" en presupuesto
-                </Text>
-                <View style={[
-                  styles.toggleSwitch, 
-                  { 
-                    backgroundColor: showCabinInfo ? seasonalColors.primary : theme.border 
-                  }
-                ]}>
-                  <View style={[
-                    styles.toggleThumb,
-                    { 
-                      backgroundColor: '#ffffff',
-                      transform: [{ translateX: showCabinInfo ? 14 : 2 }]
-                    }
-                  ]} />
-                </View>
-              </TouchableOpacity>
-            )}
-
             <Text style={[styles.label, { color: theme.text }]}>Precio por noche (ARS)</Text>
             <TextInput
               style={[styles.input, { 
