@@ -19,7 +19,7 @@ import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Clipboard from 'expo-clipboard';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
-import DateTimePickerModal from 'react-native-modal-datetime-picker';
+import { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 // Datos de tarifario por temporada
 import tariffsSummer from './data/tariffs.summer.json';
 import tariffsSpring from './data/tariffs.spring.json';
@@ -598,8 +598,25 @@ export default function App() {
   };
 
   const showDatePicker = (mode) => {
-    setDatePickerMode(mode);
-    setDatePickerVisibility(true);
+    if (Platform.OS !== 'web') {
+      setDatePickerMode(mode);
+      setDatePickerVisibility(true);
+      
+      // Para Android, usar DateTimePickerAndroid
+      if (Platform.OS === 'android') {
+        DateTimePickerAndroid.open({
+          value: new Date(),
+          onChange: (event, selectedDate) => {
+            if (event.type === 'set' && selectedDate) {
+              handleConfirmDate(selectedDate);
+            }
+          },
+          mode: 'date',
+          minimumDate: new Date(),
+        });
+      }
+    }
+    // Para web, no hacer nada ya que usamos input HTML5
   };
 
   const hideDatePicker = () => {
@@ -909,36 +926,88 @@ export default function App() {
             <View style={styles.dateRow}>
               <View style={styles.dateField}>
                 <Text style={[styles.label, { color: theme.text }]}>Desde</Text>
-                <TouchableOpacity
-                  style={[styles.input, { 
-                    backgroundColor: theme.inputBackground, 
-                    borderColor: theme.border, 
-                    justifyContent: 'center',
-                    paddingVertical: Platform.select({ ios: 16, android: 12 })
-                  }]}
-                  onPress={() => showDatePicker('from')}
-                >
-                  <Text style={[styles.dateText, { color: dateFrom ? theme.text : theme.textSecondary }]}>
-                    {dateFrom || 'Seleccionar fecha'}
-                  </Text>
-                </TouchableOpacity>
+                {Platform.OS === 'web' ? (
+                  <input
+                    type="date"
+                    value={dateFrom ? (() => {
+                      const [day, month, year] = dateFrom.split('/');
+                      return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+                    })() : ''}
+                    onChange={(e) => {
+                      const date = new Date(e.target.value);
+                      const formattedDate = date.toLocaleDateString('es-AR', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric'
+                      });
+                      setDateFrom(formattedDate);
+                    }}
+                    style={{
+                      ...styles.webDateInput,
+                      backgroundColor: theme.inputBackground,
+                      borderColor: theme.border,
+                      color: theme.text
+                    }}
+                    min={new Date().toISOString().split('T')[0]}
+                  />
+                ) : (
+                  <TouchableOpacity
+                    style={[styles.input, { 
+                      backgroundColor: theme.inputBackground, 
+                      borderColor: theme.border, 
+                      justifyContent: 'center',
+                      paddingVertical: Platform.select({ ios: 16, android: 12 })
+                    }]}
+                    onPress={() => showDatePicker('from')}
+                  >
+                    <Text style={[styles.dateText, { color: dateFrom ? theme.text : theme.textSecondary }]}>
+                      {dateFrom || 'Seleccionar fecha'}
+                    </Text>
+                  </TouchableOpacity>
+                )}
               </View>
               
               <View style={styles.dateField}>
                 <Text style={[styles.label, { color: theme.text }]}>Hasta</Text>
-                <TouchableOpacity
-                  style={[styles.input, { 
-                    backgroundColor: theme.inputBackground, 
-                    borderColor: theme.border, 
-                    justifyContent: 'center',
-                    paddingVertical: Platform.select({ ios: 16, android: 12 })
-                  }]}
-                  onPress={() => showDatePicker('to')}
-                >
-                  <Text style={[styles.dateText, { color: dateTo ? theme.text : theme.textSecondary }]}>
-                    {dateTo || 'Seleccionar fecha'}
-                  </Text>
-                </TouchableOpacity>
+                {Platform.OS === 'web' ? (
+                  <input
+                    type="date"
+                    value={dateTo ? (() => {
+                      const [day, month, year] = dateTo.split('/');
+                      return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+                    })() : ''}
+                    onChange={(e) => {
+                      const date = new Date(e.target.value);
+                      const formattedDate = date.toLocaleDateString('es-AR', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric'
+                      });
+                      setDateTo(formattedDate);
+                    }}
+                    style={{
+                      ...styles.webDateInput,
+                      backgroundColor: theme.inputBackground,
+                      borderColor: theme.border,
+                      color: theme.text
+                    }}
+                    min={new Date().toISOString().split('T')[0]}
+                  />
+                ) : (
+                  <TouchableOpacity
+                    style={[styles.input, { 
+                      backgroundColor: theme.inputBackground, 
+                      borderColor: theme.border, 
+                      justifyContent: 'center',
+                      paddingVertical: Platform.select({ ios: 16, android: 12 })
+                    }]}
+                    onPress={() => showDatePicker('to')}
+                  >
+                    <Text style={[styles.dateText, { color: dateTo ? theme.text : theme.textSecondary }]}>
+                      {dateTo || 'Seleccionar fecha'}
+                    </Text>
+                  </TouchableOpacity>
+                )}
               </View>
             </View>
 
@@ -1147,15 +1216,6 @@ export default function App() {
           </Modal>
 
         </ScrollView>
-        <DateTimePickerModal
-          isVisible={isDatePickerVisible}
-          mode="date"
-          onConfirm={handleConfirmDate}
-          onCancel={hideDatePicker}
-          textColor={isDarkMode ? '#f8fafc' : '#111827'}
-          accentColor={seasonalColors.primary}
-          minimumDate={new Date()}
-        />
       </SafeAreaView>
     </ErrorBoundary>
   );
@@ -1389,5 +1449,15 @@ const styles = StyleSheet.create({
   dateText: {
     fontSize: 16,
     textAlign: 'center',
+  },
+  webDateInput: {
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: Platform.select({ ios: 14, android: 10 }),
+    fontSize: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    width: '100%',
+    boxSizing: 'border-box',
   }
 });
