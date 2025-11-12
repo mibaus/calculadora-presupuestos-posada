@@ -19,6 +19,7 @@ import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Clipboard from 'expo-clipboard';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
+import DateTimePickerModal from 'react-native-modal-datetime-picker';
 // Datos de tarifario por temporada
 import tariffsSummer from './data/tariffs.summer.json';
 import tariffsSpring from './data/tariffs.spring.json';
@@ -200,6 +201,8 @@ export default function App() {
   const [screen, setScreen] = useState('main'); // 'main' | 'admin'
   const [showMenu, setShowMenu] = useState(false);
   const [overrides, setOverrides] = useState({ spring: null, summer: null });
+  const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
+  const [datePickerMode, setDatePickerMode] = useState('from'); // 'from' | 'to'
 
   const theme = isDarkMode ? darkTheme : lightTheme;
   const seasonalColors = theme[season]; // Colores específicos de la estación actual
@@ -495,7 +498,7 @@ export default function App() {
     if (computed.season === 'spring') {
       return `${seasonEmoji} Su Presupuesto\n${datesLine}\n✅ Precio por noche ${formatValue(computed.pricePerNightCents)}\nX ${computed.nights} noche${computed.nights > 1 ? 's' : ''}\n\n${totalSection}\n\n📍1° pago 50% (Seña) dentro de las 72hs de confirmar su reserva\n\n*${formatValue(computed.sena)}*\n\n📍2° pago 50%. Al llegar en efectivo \n\n*${formatValue(computed.saldo)}*\n\n(Por mail enviamos la confirmación de la reserva junto a la factura correspondiente)`;
     } else {
-      return `${seasonEmoji} Su Presupuesto\n${datesLine}\n✅ Precio por noche ${formatValue(computed.pricePerNightCents)}\nX ${computed.nights} noche${computed.nights > 1 ? 's' : ''}\n\n${totalSection}\n\n📍1° pago 20% dentro de las 72hs de confirmar su reserva\n\n*${formatValue(computed.sena)}*\n\n📍2° pago 30% ( Octubre - Noviembre - Diciembre) 1 solo pago \n\n*${formatValue(computed.segundo)}*\n\n📍3° pago 50%. Al llegar en efectivo \n\n*${formatValue(computed.saldo)}*\n\n(Por mail enviamos la confirmación de la reserva junto a la factura correspondiente)`;
+      return `${seasonEmoji} Su Presupuesto\n${datesLine}\n✅ Precio por noche ${formatValue(computed.pricePerNightCents)}\nX ${computed.nights} noche${computed.nights > 1 ? 's' : ''}\n\n${totalSection}\n\n📍1° pago 20% dentro de las 72hs de confirmar su reserva\n\n*${formatValue(computed.sena)}*\n\n📍2° pago 30% (Diciembre) \n\n*${formatValue(computed.segundo)}*\n\n📍3° pago 50%. Al llegar en efectivo \n\n*${formatValue(computed.saldo)}*\n\n(Por mail enviamos la confirmación de la reserva junto a la factura correspondiente)`;
     }
   };
 
@@ -592,6 +595,31 @@ export default function App() {
     setSeason(newSeason);
     setActiveTariffs(newSeason === 'summer' ? tariffsSummer : tariffsSpring);
     clearFormValues();
+  };
+
+  const showDatePicker = (mode) => {
+    setDatePickerMode(mode);
+    setDatePickerVisibility(true);
+  };
+
+  const hideDatePicker = () => {
+    setDatePickerVisibility(false);
+  };
+
+  const handleConfirmDate = (date) => {
+    const formattedDate = date.toLocaleDateString('es-AR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+    
+    if (datePickerMode === 'from') {
+      setDateFrom(formattedDate);
+    } else {
+      setDateTo(formattedDate);
+    }
+    
+    hideDatePicker();
   };
 
   // Manejador del gesto de swipe
@@ -881,54 +909,36 @@ export default function App() {
             <View style={styles.dateRow}>
               <View style={styles.dateField}>
                 <Text style={[styles.label, { color: theme.text }]}>Desde</Text>
-                <TextInput
+                <TouchableOpacity
                   style={[styles.input, { 
                     backgroundColor: theme.inputBackground, 
                     borderColor: theme.border, 
-                    color: theme.text 
+                    justifyContent: 'center',
+                    paddingVertical: Platform.select({ ios: 16, android: 12 })
                   }]}
-                  value={dateFrom}
-                  onChangeText={(text) => {
-                    // Formatear automáticamente DD/MM/YYYY
-                    let formatted = text.replace(/\D/g, '');
-                    if (formatted.length >= 2) {
-                      formatted = formatted.substring(0, 2) + '/' + formatted.substring(2);
-                    }
-                    if (formatted.length >= 5) {
-                      formatted = formatted.substring(0, 5) + '/' + formatted.substring(5, 9);
-                    }
-                    setDateFrom(formatted);
-                  }}
-                  placeholder="15/12/2024"
-                  placeholderTextColor={theme.textSecondary}
-                  maxLength={10}
-                />
+                  onPress={() => showDatePicker('from')}
+                >
+                  <Text style={[styles.dateText, { color: dateFrom ? theme.text : theme.textSecondary }]}>
+                    {dateFrom || 'Seleccionar fecha'}
+                  </Text>
+                </TouchableOpacity>
               </View>
               
               <View style={styles.dateField}>
                 <Text style={[styles.label, { color: theme.text }]}>Hasta</Text>
-                <TextInput
+                <TouchableOpacity
                   style={[styles.input, { 
                     backgroundColor: theme.inputBackground, 
                     borderColor: theme.border, 
-                    color: theme.text 
+                    justifyContent: 'center',
+                    paddingVertical: Platform.select({ ios: 16, android: 12 })
                   }]}
-                  value={dateTo}
-                  onChangeText={(text) => {
-                    // Formatear automáticamente DD/MM/YYYY
-                    let formatted = text.replace(/\D/g, '');
-                    if (formatted.length >= 2) {
-                      formatted = formatted.substring(0, 2) + '/' + formatted.substring(2);
-                    }
-                    if (formatted.length >= 5) {
-                      formatted = formatted.substring(0, 5) + '/' + formatted.substring(5, 9);
-                    }
-                    setDateTo(formatted);
-                  }}
-                  placeholder="18/12/2024"
-                  placeholderTextColor={theme.textSecondary}
-                  maxLength={10}
-                />
+                  onPress={() => showDatePicker('to')}
+                >
+                  <Text style={[styles.dateText, { color: dateTo ? theme.text : theme.textSecondary }]}>
+                    {dateTo || 'Seleccionar fecha'}
+                  </Text>
+                </TouchableOpacity>
               </View>
             </View>
 
@@ -1137,6 +1147,15 @@ export default function App() {
           </Modal>
 
         </ScrollView>
+        <DateTimePickerModal
+          isVisible={isDatePickerVisible}
+          mode="date"
+          onConfirm={handleConfirmDate}
+          onCancel={hideDatePicker}
+          textColor={isDarkMode ? '#f8fafc' : '#111827'}
+          accentColor={seasonalColors.primary}
+          minimumDate={new Date()}
+        />
       </SafeAreaView>
     </ErrorBoundary>
   );
@@ -1366,5 +1385,9 @@ const styles = StyleSheet.create({
   },
   dateField: {
     flex: 1,
+  },
+  dateText: {
+    fontSize: 16,
+    textAlign: 'center',
   }
 });
