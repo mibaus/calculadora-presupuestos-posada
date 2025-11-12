@@ -23,8 +23,6 @@ import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import tariffsSummer from './data/tariffs.summer.json';
 import tariffsSpring from './data/tariffs.spring.json';
 // Componentes de cabañas eliminados
-// import CabinsScreen from './components/CabinsScreen';
-// import AdminCabinsScreen from './components/AdminCabinsScreen';
 
 // Ignorar todas las advertencias
 LogBox.ignoreAllLogs();
@@ -183,10 +181,6 @@ class ErrorBoundary extends React.Component {
 }
 
 export default function App() {
-  const [pricePerNight, setPricePerNight] = useState('');
-  const [numberOfNights, setNumberOfNights] = useState('');
-  const [numberOfPeople, setNumberOfPeople] = useState('');
-  const [showCabinInfo, setShowCabinInfo] = useState(false); // Toggle para mostrar info de cabaña
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [discount, setDiscount] = useState(0); // 0, 0.10, 0.15
@@ -200,7 +194,7 @@ export default function App() {
   const [manualPriceEdited, setManualPriceEdited] = useState(false);
   const [suggestedStayDiscount, setSuggestedStayDiscount] = useState(null); // percent (0-100)
   const [manualDiscountEdited, setManualDiscountEdited] = useState(false);
-  const [screen, setScreen] = useState('main'); // 'main' | 'admin' | 'cabins' | 'admin-cabins'
+  const [screen, setScreen] = useState('main'); // 'main' | 'admin'
   const [showMenu, setShowMenu] = useState(false);
   const [overrides, setOverrides] = useState({ spring: null, summer: null });
 
@@ -496,43 +490,9 @@ export default function App() {
     }
     
     if (computed.season === 'spring') {
-      return `${seasonEmoji} Su Presupuesto${showCabinInfo && numberOfPeople ? `\n🏡 Cabaña para ${numberOfPeople}` : ''}
-${datesLine}
-✅ Precio por noche ${formatValue(computed.pricePerNightCents)}
-X ${computed.nights} noche${computed.nights > 1 ? 's' : ''}
-
-${totalSection}
-
-📍1° pago 50% (Seña) dentro de las 72hs de confirmar su reserva
-
-*${formatValue(computed.sena)}*
-
-📍2° pago 50%. Al llegar en efectivo 
-
-*${formatValue(computed.saldo)}*
-
-(Por mail enviamos la confirmación de la reserva junto a la factura correspondiente)`;
+      return `${seasonEmoji} Su Presupuesto\n${datesLine}\n✅ Precio por noche ${formatValue(computed.pricePerNightCents)}\nX ${computed.nights} noche${computed.nights > 1 ? 's' : ''}\n\n${totalSection}\n\n📍1° pago 50% (Seña) dentro de las 72hs de confirmar su reserva\n\n*${formatValue(computed.sena)}*\n\n📍2° pago 50%. Al llegar en efectivo \n\n*${formatValue(computed.saldo)}*\n\n(Por mail enviamos la confirmación de la reserva junto a la factura correspondiente)`;
     } else {
-      return `${seasonEmoji} Su Presupuesto${showCabinInfo && numberOfPeople ? `\n🏡 Cabaña para ${numberOfPeople}` : ''}
-${datesLine}
-✅ Precio por noche ${formatValue(computed.pricePerNightCents)}
-X ${computed.nights} noche${computed.nights > 1 ? 's' : ''}
-
-${totalSection}
-
-📍1° pago 20% dentro de las 72hs de confirmar su reserva
-
-*${formatValue(computed.sena)}*
-
-📍2° pago 30% ( Octubre - Noviembre - Diciembre) 1 solo pago 
-
-*${formatValue(computed.segundo)}*
-
-📍3° pago 50%. Al llegar en efectivo 
-
-*${formatValue(computed.saldo)}*
-
-(Por mail enviamos la confirmación de la reserva junto a la factura correspondiente)`;
+      return `${seasonEmoji} Su Presupuesto\n${datesLine}\n✅ Precio por noche ${formatValue(computed.pricePerNightCents)}\nX ${computed.nights} noche${computed.nights > 1 ? 's' : ''}\n\n${totalSection}\n\n📍1° pago 20% dentro de las 72hs de confirmar su reserva\n\n*${formatValue(computed.sena)}*\n\n📍2° pago 30% ( Octubre - Noviembre - Diciembre) 1 solo pago \n\n*${formatValue(computed.segundo)}*\n\n📍3° pago 50%. Al llegar en efectivo \n\n*${formatValue(computed.saldo)}*\n\n(Por mail enviamos la confirmación de la reserva junto a la factura correspondiente)`;
     }
   };
 
@@ -577,11 +537,6 @@ ${totalSection}
     }
   };
 
-  // Funciones de navegación de cabañas
-  const handleBackToCabins = () => {
-    setScreen('main');
-  };
-
   // Funciones de cabañas eliminadas
 
   // Función para calcular noches entre fechas
@@ -617,7 +572,6 @@ ${totalSection}
     setPricePerNight('');
     setNumberOfNights('');
     setNumberOfPeople('');
-    setShowCabinInfo(false);
     setDateFrom('');
     setDateTo('');
     setDiscount(0);
@@ -646,8 +600,6 @@ ${totalSection}
       handleSwipeChangeSeason();
     }
   };
-
-  // Pantallas de cabañas eliminadas
 
   return (
     <ErrorBoundary>
@@ -1174,8 +1126,6 @@ ${totalSection}
             </View>
           ) : null}
 
-          {/* Botón de cabañas eliminado */}
-
           {/* Menú hamburguesa */}
           <Modal
             visible={showMenu}
@@ -1193,7 +1143,6 @@ ${totalSection}
                   <Text style={[styles.label, { color: theme.text }]}>Modo: {themePreference === 'auto' ? 'Auto' : (themePreference === 'light' ? 'Claro' : 'Oscuro')}</Text>
                   <Text style={styles.themeIconSmall}>{getThemeIcon()}</Text>
                 </TouchableOpacity>
-                {/* Opción de cabañas eliminada */}
                 <TouchableOpacity
                   style={[styles.helperRow, { marginTop: 8 }]}
                   onPress={() => { setScreen('admin'); setShowMenu(false); }}
@@ -1431,58 +1380,6 @@ const styles = StyleSheet.create({
   },
   seasonSwitchEmojiSmall: {
     fontSize: 14
-  },
-  // Estilos para el botón de cabañas minimalista
-  cabinsButtonSimple: {
-    marginTop: 16,
-    paddingVertical: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    alignItems: 'center',
-  },
-  cabinsButtonSimpleText: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  // Estilo para la indicación de swipe
-  swipeHint: {
-    fontSize: 12,
-    textAlign: 'center',
-    marginTop: 4,
-    fontStyle: 'italic',
-  },
-  // Estilos para el toggle de cabaña
-  toggleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  toggleLabel: {
-    fontSize: 14,
-    flex: 1,
-    marginRight: 12,
-  },
-  toggleSwitch: {
-    width: 44,
-    height: 24,
-    borderRadius: 12,
-    justifyContent: 'center',
-    position: 'relative',
-  },
-  toggleThumb: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    position: 'absolute',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 2,
   },
   // Estilos para campos de fecha
   dateRow: {
