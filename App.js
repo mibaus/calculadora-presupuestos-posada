@@ -23,6 +23,7 @@ import { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 // Datos de tarifario por temporada
 import tariffsSummer from './data/tariffs.summer.json';
 import tariffsSpring from './data/tariffs.spring.json';
+import tariffsAutumn from './data/tariffs.autumn.json';
 // Componentes de cabañas eliminados
 
 // Ignorar todas las advertencias
@@ -54,6 +55,12 @@ const lightTheme = {
     secondary: '#facc15', // Amarillo más claro
     accent: '#fefce8', // Amarillo muy claro para fondos
     border: '#fde047' // Amarillo para bordes
+  },
+  autumn: {
+    primary: '#ea580c', // Naranja
+    secondary: '#fb923c', // Naranja más claro
+    accent: '#fff7ed', // Naranja muy claro para fondos
+    border: '#fed7aa' // Naranja para bordes
   }
 };
 
@@ -82,6 +89,12 @@ const darkTheme = {
     secondary: '#eab308', // Amarillo
     accent: '#713f12', // Amarillo oscuro para fondos
     border: '#ca8a04' // Amarillo para bordes
+  },
+  autumn: {
+    primary: '#fb923c', // Naranja más brillante para modo oscuro
+    secondary: '#ea580c', // Naranja
+    accent: '#9a3412', // Naranja oscuro para fondos
+    border: '#c2410c' // Naranja para bordes
   }
 };
 
@@ -192,7 +205,7 @@ export default function App() {
   const [feedbackMessage, setFeedbackMessage] = useState('');
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [themePreference, setThemePreference] = useState('auto'); // 'auto', 'light', 'dark'
-  const [season, setSeason] = useState('summer'); // 'summer', 'spring'
+  const [season, setSeason] = useState('summer'); // 'summer' | 'spring' | 'autumn'
   const [activeTariffs, setActiveTariffs] = useState(tariffsSummer);
   const [suggestedPriceCents, setSuggestedPriceCents] = useState(0);
   const [manualPriceEdited, setManualPriceEdited] = useState(false);
@@ -232,7 +245,7 @@ export default function App() {
 
   // Cambiar tarifario activo al cambiar temporada
   useEffect(() => {
-    const base = season === 'spring' ? tariffsSpring : tariffsSummer;
+    const base = season === 'spring' ? tariffsSpring : season === 'autumn' ? tariffsAutumn : tariffsSummer;
     // aplicar overrides si existen
     const ov = overrides?.[season];
     if (ov) {
@@ -286,7 +299,7 @@ export default function App() {
         const s = await AsyncStorage.getItem('tariffOverrides');
         if (s) {
           const parsed = JSON.parse(s);
-          setOverrides(parsed || { spring: null, summer: null });
+          setOverrides(parsed || { spring: null, summer: null, autumn: null });
         }
       } catch (e) {
         console.error('Error loading overrides', e);
@@ -296,7 +309,7 @@ export default function App() {
 
   // Reaplicar overrides cuando cambian
   useEffect(() => {
-    const base = season === 'spring' ? tariffsSpring : tariffsSummer;
+    const base = season === 'spring' ? tariffsSpring : season === 'autumn' ? tariffsAutumn : tariffsSummer;
     const ov = overrides?.[season];
     if (ov) {
       const merged = {
@@ -323,9 +336,9 @@ export default function App() {
     }
   };
 
-  // En primavera, auto-aplicar el descuento sugerido si no hubo intervención manual
+  // En primavera y otoño, auto-aplicar el descuento sugerido si no hubo intervención manual
   useEffect(() => {
-    if (season === 'spring' && suggestedStayDiscount && !manualDiscountEdited) {
+    if ((season === 'spring' || season === 'autumn') && suggestedStayDiscount && !manualDiscountEdited) {
       setDiscount(suggestedStayDiscount / 100);
     }
   }, [season, suggestedStayDiscount, manualDiscountEdited]);
@@ -402,6 +415,11 @@ export default function App() {
       percents.add(10);
       percents.add(15);
     }
+    // En otoño, mostrar siempre 10%, 15% y 20%
+    if (season === 'autumn') {
+      percents.add(10);
+      percents.add(15);
+    }
     // Filtrar, ordenar y mapear a objetos {label, value}
     const ordered = Array.from(percents)
       .filter(p => typeof p === 'number' && p > 0)
@@ -429,8 +447,8 @@ export default function App() {
       
       let sena, segundo, saldo;
       
-      if (season === 'spring') {
-        // Primavera: 50% seña, 50% saldo final
+      if (season === 'spring' || season === 'autumn') {
+        // Primavera y otoño: 50% seña, 50% saldo final
         sena = Math.round(totalWithDiscount * 0.5);
         segundo = 0;
         saldo = totalWithDiscount - sena;
@@ -486,8 +504,8 @@ export default function App() {
 *Total final: ${formatValue(computed.totalWithDiscount)}*`;
     }
     
-    const seasonEmoji = computed.season === 'spring' ? '🌸' : '🏖️';
-    const seasonName = computed.season === 'spring' ? 'Primavera' : 'Verano';
+    const seasonEmoji = computed.season === 'spring' ? '🌸' : computed.season === 'autumn' ? '🍂' : '🏖️';
+    const seasonName = computed.season === 'spring' ? 'Primavera' : computed.season === 'autumn' ? 'Otoño' : 'Verano';
     
     // Construir línea de fechas si están disponibles
     let datesLine = '';
@@ -495,7 +513,7 @@ export default function App() {
       datesLine = `📅 Del ${dateFrom} al ${dateTo}\n`;
     }
     
-    if (computed.season === 'spring') {
+    if (computed.season === 'spring' || computed.season === 'autumn') {
       return `${seasonEmoji} Su Presupuesto\n${datesLine}\n✅ Precio por noche ${formatValue(computed.pricePerNightCents)}\nX ${computed.nights} noche${computed.nights > 1 ? 's' : ''}\n\n${totalSection}\n\n📍1° pago 50% (Seña) dentro de las 72hs de confirmar su reserva\n\n*${formatValue(computed.sena)}*\n\n📍2° pago 50%. Al llegar en efectivo \n\n*${formatValue(computed.saldo)}*\n\n(Por mail enviamos la confirmación de la reserva junto a la factura correspondiente)`;
     } else {
       return `${seasonEmoji} Su Presupuesto\n${datesLine}\n✅ Precio por noche ${formatValue(computed.pricePerNightCents)}\nX ${computed.nights} noche${computed.nights > 1 ? 's' : ''}\n\n${totalSection}\n\n📍1° pago 20% dentro de las 72hs de confirmar su reserva\n\n*${formatValue(computed.sena)}*\n\n📍2° pago 30% (Diciembre) \n\n*${formatValue(computed.segundo)}*\n\n📍3° pago 50%. Al llegar en efectivo \n\n*${formatValue(computed.saldo)}*\n\n(Por mail enviamos la confirmación de la reserva junto a la factura correspondiente)`;
@@ -591,9 +609,9 @@ export default function App() {
 
   // Función para cambiar estación con swipe
   const handleSwipeChangeSeason = () => {
-    const newSeason = season === 'summer' ? 'spring' : 'summer';
+    const newSeason = season === 'summer' ? 'spring' : season === 'spring' ? 'autumn' : 'summer';
     setSeason(newSeason);
-    setActiveTariffs(newSeason === 'summer' ? tariffsSummer : tariffsSpring);
+    setActiveTariffs(newSeason === 'summer' ? tariffsSummer : newSeason === 'spring' ? tariffsSpring : tariffsAutumn);
     clearFormValues();
   };
 
@@ -678,6 +696,15 @@ export default function App() {
               >
                 <Text style={[styles.seasonSwitchEmojiSmall, { opacity: season === 'spring' ? 1 : 0.5 }]}>🌸</Text>
               </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.seasonSwitchButtonSmall,
+                  { backgroundColor: season === 'autumn' ? theme.autumn.primary : 'transparent' }
+                ]}
+                onPress={() => setSeason('autumn')}
+              >
+                <Text style={[styles.seasonSwitchEmojiSmall, { opacity: season === 'autumn' ? 1 : 0.5 }]}>🍂</Text>
+              </TouchableOpacity>
             </View>
             <TouchableOpacity
               style={[styles.themeToggleSmall, { backgroundColor: theme.surface, borderColor: theme.border }]}
@@ -704,6 +731,12 @@ export default function App() {
                   onPress={() => setSeason('spring')}
                 >
                   <Text style={[styles.discountText, { color: season === 'spring' ? '#fff' : theme.text }]}>Primavera</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.discountBtn, { backgroundColor: season === 'autumn' ? theme.primary : theme.surface, borderColor: theme.border }]}
+                  onPress={() => setSeason('autumn')}
+                >
+                  <Text style={[styles.discountText, { color: season === 'autumn' ? '#fff' : theme.text }]}>Otoño</Text>
                 </TouchableOpacity>
               </View>
 
@@ -848,7 +881,7 @@ export default function App() {
           <View style={[styles.titleRow, { backgroundColor: theme.background }]}>
             <Text style={[styles.title, { color: theme.text }]}>Calcular presupuesto</Text>
             <Text style={[styles.subtitle, { color: seasonalColors.primary }]}>
-              {season === 'spring' ? '🌸 Temporada Primavera' : '🏖️ Temporada Verano'}
+              {season === 'spring' ? '🌸 Temporada Primavera' : season === 'autumn' ? '🍂 Temporada Otoño' : '🏖️ Temporada Verano'}
             </Text>
           </View>
 
@@ -1118,7 +1151,7 @@ export default function App() {
               <View style={[styles.resultCard, { backgroundColor: theme.surface, borderLeftColor: seasonalColors.primary }]}>
                 <View style={styles.resultRow}>
                   <Text style={[styles.resultLabel, { color: seasonalColors.primary }]}>
-                    Seña ({computed.season === 'spring' ? '50%' : '20%'})
+                    Seña ({computed.season === 'summer' ? '20%' : '50%'})
                   </Text>
                   <TouchableOpacity
                     style={[styles.copyButton, { backgroundColor: seasonalColors.accent }]}
@@ -1148,11 +1181,11 @@ export default function App() {
               <View style={[styles.resultCard, { backgroundColor: theme.surface, borderLeftColor: theme.error }]}>
                 <View style={styles.resultRow}>
                   <Text style={[styles.resultLabel, { color: theme.error }]}>
-                    {computed.season === 'spring' ? 'Segundo pago (50%)' : 'Saldo final (50%)'}
+                    {computed.season === 'summer' ? 'Saldo final (50%)' : 'Segundo pago (50%)'}
                   </Text>
                   <TouchableOpacity
                     style={[styles.copyButton, { backgroundColor: isDarkMode ? '#ef444420' : '#fee2e2' }]}
-                    onPress={() => onCopyToClipboard(computed.saldo, computed.season === 'spring' ? 'Segundo pago' : 'Saldo final')}
+                    onPress={() => onCopyToClipboard(computed.saldo, computed.season === 'summer' ? 'Saldo final' : 'Segundo pago')}
                   >
                     <Text style={styles.copyIcon}>📋</Text>
                   </TouchableOpacity>
