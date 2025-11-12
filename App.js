@@ -248,7 +248,7 @@ export default function App() {
 
   // Sugerir precio por día basado en cantidad de personas y temporada.
   useEffect(() => {
-    const people = parseInt(numberOfPeople || '0');
+    const people = numberOfPeople === '' ? 0 : parseInt(numberOfPeople);
     if (!activeTariffs || !people) {
       setSuggestedPriceCents(0);
       return;
@@ -267,7 +267,7 @@ export default function App() {
 
   // Sugerir descuento por estadía prolongada desde tarifario
   useEffect(() => {
-    const nights = parseInt(numberOfNights || '0');
+    const nights = numberOfNights === '' ? 0 : parseInt(numberOfNights);
     if (!activeTariffs || !nights) {
       setSuggestedStayDiscount(null);
       return;
