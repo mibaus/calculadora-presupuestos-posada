@@ -1,4 +1,5 @@
 {
+  "outputDirectory": "web-build",
   "rewrites": [
     {
       "source": "/(.*)",
