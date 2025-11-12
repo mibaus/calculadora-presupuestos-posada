@@ -1,18 +1,4 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "web-build/**",
-      "use": "@vercel/static"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "/web-build/$1"
-    }
-  ],
-  "functions": {},
   "rewrites": [
     {
       "source": "/(.*)",
