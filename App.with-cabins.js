@@ -22,9 +22,9 @@ import { PanGestureHandler, State } from 'react-native-gesture-handler';
 // Datos de tarifario por temporada
 import tariffsSummer from './data/tariffs.summer.json';
 import tariffsSpring from './data/tariffs.spring.json';
-// Componentes de cabañas eliminados
-// import CabinsScreen from './components/CabinsScreen';
-// import AdminCabinsScreen from './components/AdminCabinsScreen';
+// Componentes de cabañas
+import CabinsScreen from './components/CabinsScreen';
+import AdminCabinsScreen from './components/AdminCabinsScreen';
 
 // Ignorar todas las advertencias
 LogBox.ignoreAllLogs();
@@ -186,9 +186,6 @@ export default function App() {
   const [pricePerNight, setPricePerNight] = useState('');
   const [numberOfNights, setNumberOfNights] = useState('');
   const [numberOfPeople, setNumberOfPeople] = useState('');
-  const [showCabinInfo, setShowCabinInfo] = useState(false); // Toggle para mostrar info de cabaña
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
   const [discount, setDiscount] = useState(0); // 0, 0.10, 0.15
   const [computed, setComputed] = useState(null);
   const [feedbackMessage, setFeedbackMessage] = useState('');
@@ -489,15 +486,9 @@ export default function App() {
     const seasonEmoji = computed.season === 'spring' ? '🌸' : '🏖️';
     const seasonName = computed.season === 'spring' ? 'Primavera' : 'Verano';
     
-    // Construir línea de fechas si están disponibles
-    let datesLine = '';
-    if (dateFrom && dateTo) {
-      datesLine = `📅 Del ${dateFrom} al ${dateTo}\n`;
-    }
-    
     if (computed.season === 'spring') {
-      return `${seasonEmoji} Su Presupuesto${showCabinInfo && numberOfPeople ? `\n🏡 Cabaña para ${numberOfPeople}` : ''}
-${datesLine}
+      return `${seasonEmoji} Su Presupuesto
+
 ✅ Precio por noche ${formatValue(computed.pricePerNightCents)}
 X ${computed.nights} noche${computed.nights > 1 ? 's' : ''}
 
@@ -513,8 +504,8 @@ ${totalSection}
 
 (Por mail enviamos la confirmación de la reserva junto a la factura correspondiente)`;
     } else {
-      return `${seasonEmoji} Su Presupuesto${showCabinInfo && numberOfPeople ? `\n🏡 Cabaña para ${numberOfPeople}` : ''}
-${datesLine}
+      return `${seasonEmoji} Su Presupuesto
+
 ✅ Precio por noche ${formatValue(computed.pricePerNightCents)}
 X ${computed.nights} noche${computed.nights > 1 ? 's' : ''}
 
@@ -582,44 +573,19 @@ ${totalSection}
     setScreen('main');
   };
 
-  // Funciones de cabañas eliminadas
-
-  // Función para calcular noches entre fechas
-  const calculateNightsBetweenDates = (fromDate, toDate) => {
-    if (!fromDate || !toDate) return 0;
-    
-    try {
-      // Parsear fechas en formato DD/MM/YYYY
-      const [dayFrom, monthFrom, yearFrom] = fromDate.split('/').map(Number);
-      const [dayTo, monthTo, yearTo] = toDate.split('/').map(Number);
-      
-      const dateFromObj = new Date(yearFrom, monthFrom - 1, dayFrom);
-      const dateToObj = new Date(yearTo, monthTo - 1, dayTo);
-      
-      const timeDiff = dateToObj.getTime() - dateFromObj.getTime();
-      const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
-      return Math.max(0, daysDiff);
-    } catch {
-      return 0;
-    }
+  const handleAdminCabins = () => {
+    setScreen('admin-cabins');
   };
 
-  // Efecto para calcular noches automáticamente cuando cambian las fechas
-  useEffect(() => {
-    if (dateFrom && dateTo) {
-      const nights = calculateNightsBetweenDates(dateFrom, dateTo);
-      setNumberOfNights(nights.toString());
-    }
-  }, [dateFrom, dateTo]);
+  const handleBackFromAdmin = () => {
+    setScreen('cabins');
+  };
 
   // Función para limpiar valores del formulario
   const clearFormValues = () => {
     setPricePerNight('');
     setNumberOfNights('');
     setNumberOfPeople('');
-    setShowCabinInfo(false);
-    setDateFrom('');
-    setDateTo('');
     setDiscount(0);
     setComputed(null);
     setFeedbackMessage('');
@@ -647,7 +613,38 @@ ${totalSection}
     }
   };
 
-  // Pantallas de cabañas eliminadas
+  // Renderizar pantalla de cabañas
+  if (screen === 'cabins') {
+    return (
+      <ErrorBoundary>
+        <SafeAreaView style={[styles.safe, { backgroundColor: theme.background }]}>
+          <StatusBar style={isDarkMode ? 'light' : 'dark'} />
+          <CabinsScreen
+            theme={theme}
+            seasonalColors={seasonalColors}
+            onBack={handleBackToCabins}
+            onAdminPress={handleAdminCabins}
+          />
+        </SafeAreaView>
+      </ErrorBoundary>
+    );
+  }
+
+  // Renderizar pantalla de administración de cabañas
+  if (screen === 'admin-cabins') {
+    return (
+      <ErrorBoundary>
+        <SafeAreaView style={[styles.safe, { backgroundColor: theme.background }]}>
+          <StatusBar style={isDarkMode ? 'light' : 'dark'} />
+          <AdminCabinsScreen
+            theme={theme}
+            seasonalColors={seasonalColors}
+            onBack={handleBackFromAdmin}
+          />
+        </SafeAreaView>
+      </ErrorBoundary>
+    );
+  }
 
   return (
     <ErrorBoundary>
@@ -860,7 +857,7 @@ ${totalSection}
             }}
           >
             <View style={[styles.card, { backgroundColor: theme.surface, borderColor: seasonalColors.border, borderWidth: 1 }]}>
-            <Text style={[styles.label, { color: theme.text }]}>Cantidad de huéspedes</Text>
+            <Text style={[styles.label, { color: theme.text }]}>Cantidad de personas</Text>
             <TextInput
               style={[styles.input, { 
                 backgroundColor: theme.inputBackground, 
@@ -877,32 +874,6 @@ ${totalSection}
               placeholder=""
               placeholderTextColor={theme.textSecondary}
             />
-
-            {/* Toggle para mostrar info de cabaña */}
-            {numberOfPeople && (
-              <TouchableOpacity
-                style={[styles.toggleRow, { marginTop: 8, marginBottom: 8 }]}
-                onPress={() => setShowCabinInfo(!showCabinInfo)}
-              >
-                <Text style={[styles.toggleLabel, { color: theme.textSecondary }]}>
-                  Incluir "Cabaña para {numberOfPeople}" en presupuesto
-                </Text>
-                <View style={[
-                  styles.toggleSwitch, 
-                  { 
-                    backgroundColor: showCabinInfo ? seasonalColors.primary : theme.border 
-                  }
-                ]}>
-                  <View style={[
-                    styles.toggleThumb,
-                    { 
-                      backgroundColor: '#ffffff',
-                      transform: [{ translateX: showCabinInfo ? 14 : 2 }]
-                    }
-                  ]} />
-                </View>
-              </TouchableOpacity>
-            )}
 
             <Text style={[styles.label, { color: theme.text }]}>Precio por noche (ARS)</Text>
             <TextInput
@@ -938,72 +909,10 @@ ${totalSection}
                 // Permitir solo números enteros
                 const cleaned = t.replace(/[^0-9]/g, '');
                 setNumberOfNights(cleaned);
-                // Limpiar fechas si se edita manualmente
-                if (cleaned !== numberOfNights) {
-                  setDateFrom('');
-                  setDateTo('');
-                }
               }}
               placeholder=""
               placeholderTextColor={theme.textSecondary}
             />
-
-            {/* Campos de fecha */}
-            <View style={styles.dateRow}>
-              <View style={styles.dateField}>
-                <Text style={[styles.label, { color: theme.text }]}>Desde</Text>
-                <TextInput
-                  style={[styles.input, { 
-                    backgroundColor: theme.inputBackground, 
-                    borderColor: theme.border, 
-                    color: theme.text 
-                  }]}
-                  value={dateFrom}
-                  onChangeText={(text) => {
-                    // Formatear automáticamente DD/MM/YYYY
-                    let formatted = text.replace(/\D/g, '');
-                    if (formatted.length >= 2) {
-                      formatted = formatted.substring(0, 2) + '/' + formatted.substring(2);
-                    }
-                    if (formatted.length >= 5) {
-                      formatted = formatted.substring(0, 5) + '/' + formatted.substring(5, 9);
-                    }
-                    setDateFrom(formatted);
-                  }}
-                  placeholder="15/12/2024"
-                  placeholderTextColor={theme.textSecondary}
-                  maxLength={10}
-                />
-              </View>
-              
-              <View style={styles.dateField}>
-                <Text style={[styles.label, { color: theme.text }]}>Hasta</Text>
-                <TextInput
-                  style={[styles.input, { 
-                    backgroundColor: theme.inputBackground, 
-                    borderColor: theme.border, 
-                    color: theme.text 
-                  }]}
-                  value={dateTo}
-                  onChangeText={(text) => {
-                    // Formatear automáticamente DD/MM/YYYY
-                    let formatted = text.replace(/\D/g, '');
-                    if (formatted.length >= 2) {
-                      formatted = formatted.substring(0, 2) + '/' + formatted.substring(2);
-                    }
-                    if (formatted.length >= 5) {
-                      formatted = formatted.substring(0, 5) + '/' + formatted.substring(5, 9);
-                    }
-                    setDateTo(formatted);
-                  }}
-                  placeholder="18/12/2024"
-                  placeholderTextColor={theme.textSecondary}
-                  maxLength={10}
-                />
-              </View>
-            </View>
-
-            {/* Cartel de noches calculadas eliminado */}
 
             {suggestedStayDiscount !== null && suggestedStayDiscount > 0 && (
               <View style={[styles.helperRow, { backgroundColor: seasonalColors.accent, padding: 8, borderRadius: 8, marginBottom: 8 }]}>
@@ -1174,7 +1083,15 @@ ${totalSection}
             </View>
           ) : null}
 
-          {/* Botón de cabañas eliminado */}
+          {/* Botón para ver cabañas - minimalista */}
+          <TouchableOpacity
+            style={[styles.cabinsButtonSimple, { backgroundColor: theme.surface, borderColor: seasonalColors.primary }]}
+            onPress={() => setScreen('cabins')}
+          >
+            <Text style={[styles.cabinsButtonSimpleText, { color: seasonalColors.primary }]}>
+              🏡 Cabañas
+            </Text>
+          </TouchableOpacity>
 
           {/* Menú hamburguesa */}
           <Modal
@@ -1193,7 +1110,13 @@ ${totalSection}
                   <Text style={[styles.label, { color: theme.text }]}>Modo: {themePreference === 'auto' ? 'Auto' : (themePreference === 'light' ? 'Claro' : 'Oscuro')}</Text>
                   <Text style={styles.themeIconSmall}>{getThemeIcon()}</Text>
                 </TouchableOpacity>
-                {/* Opción de cabañas eliminada */}
+                <TouchableOpacity
+                  style={[styles.helperRow, { marginTop: 8 }]}
+                  onPress={() => { setScreen('cabins'); setShowMenu(false); }}
+                >
+                  <Text style={[styles.label, { color: theme.text }]}>Nuestras Cabañas</Text>
+                  <Text style={styles.themeIconSmall}>🏡</Text>
+                </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.helperRow, { marginTop: 8 }]}
                   onPress={() => { setScreen('admin'); setShowMenu(false); }}
@@ -1450,47 +1373,5 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 4,
     fontStyle: 'italic',
-  },
-  // Estilos para el toggle de cabaña
-  toggleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  toggleLabel: {
-    fontSize: 14,
-    flex: 1,
-    marginRight: 12,
-  },
-  toggleSwitch: {
-    width: 44,
-    height: 24,
-    borderRadius: 12,
-    justifyContent: 'center',
-    position: 'relative',
-  },
-  toggleThumb: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    position: 'absolute',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  // Estilos para campos de fecha
-  dateRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 8,
-  },
-  dateField: {
-    flex: 1,
   }
 });

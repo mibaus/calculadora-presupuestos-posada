@@ -1,16 +1,15 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { 
-  SafeAreaView, 
-  View, 
-  Text, 
-  TextInput, 
-  TouchableOpacity, 
-  StyleSheet, 
-  ScrollView, 
+import React, { useState, useEffect } from 'react';
+import {
+  SafeAreaView,
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
   Share,
   Platform,
   LogBox,
-  Appearance,
   Keyboard,
   Modal,
   Alert
@@ -23,8 +22,6 @@ import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import tariffsSummer from './data/tariffs.summer.json';
 import tariffsSpring from './data/tariffs.spring.json';
 // Componentes de cabañas eliminados
-// import CabinsScreen from './components/CabinsScreen';
-// import AdminCabinsScreen from './components/AdminCabinsScreen';
 
 // Ignorar todas las advertencias
 LogBox.ignoreAllLogs();
@@ -187,8 +184,11 @@ export default function App() {
   const [numberOfNights, setNumberOfNights] = useState('');
   const [numberOfPeople, setNumberOfPeople] = useState('');
   const [showCabinInfo, setShowCabinInfo] = useState(false); // Toggle para mostrar info de cabaña
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
+  
+  // Estados para selector de fechas
+  const [dateMode, setDateMode] = useState('nights'); // 'nights' | 'dates'
+  const [checkInDateText, setCheckInDateText] = useState('');
+  const [checkOutDateText, setCheckOutDateText] = useState('');
   const [discount, setDiscount] = useState(0); // 0, 0.10, 0.15
   const [computed, setComputed] = useState(null);
   const [feedbackMessage, setFeedbackMessage] = useState('');
@@ -200,7 +200,7 @@ export default function App() {
   const [manualPriceEdited, setManualPriceEdited] = useState(false);
   const [suggestedStayDiscount, setSuggestedStayDiscount] = useState(null); // percent (0-100)
   const [manualDiscountEdited, setManualDiscountEdited] = useState(false);
-  const [screen, setScreen] = useState('main'); // 'main' | 'admin' | 'cabins' | 'admin-cabins'
+  const [screen, setScreen] = useState('main'); // 'main' | 'admin'
   const [showMenu, setShowMenu] = useState(false);
   const [overrides, setOverrides] = useState({ spring: null, summer: null });
 
@@ -489,15 +489,9 @@ export default function App() {
     const seasonEmoji = computed.season === 'spring' ? '🌸' : '🏖️';
     const seasonName = computed.season === 'spring' ? 'Primavera' : 'Verano';
     
-    // Construir línea de fechas si están disponibles
-    let datesLine = '';
-    if (dateFrom && dateTo) {
-      datesLine = `📅 Del ${dateFrom} al ${dateTo}\n`;
-    }
-    
     if (computed.season === 'spring') {
       return `${seasonEmoji} Su Presupuesto${showCabinInfo && numberOfPeople ? `\n🏡 Cabaña para ${numberOfPeople}` : ''}
-${datesLine}
+
 ✅ Precio por noche ${formatValue(computed.pricePerNightCents)}
 X ${computed.nights} noche${computed.nights > 1 ? 's' : ''}
 
@@ -514,7 +508,7 @@ ${totalSection}
 (Por mail enviamos la confirmación de la reserva junto a la factura correspondiente)`;
     } else {
       return `${seasonEmoji} Su Presupuesto${showCabinInfo && numberOfPeople ? `\n🏡 Cabaña para ${numberOfPeople}` : ''}
-${datesLine}
+
 ✅ Precio por noche ${formatValue(computed.pricePerNightCents)}
 X ${computed.nights} noche${computed.nights > 1 ? 's' : ''}
 
@@ -584,19 +578,19 @@ ${totalSection}
 
   // Funciones de cabañas eliminadas
 
-  // Función para calcular noches entre fechas
-  const calculateNightsBetweenDates = (fromDate, toDate) => {
-    if (!fromDate || !toDate) return 0;
+  // Función para calcular noches entre fechas de texto
+  const calculateNightsFromText = (checkInText, checkOutText) => {
+    if (!checkInText || !checkOutText) return 0;
     
     try {
       // Parsear fechas en formato DD/MM/YYYY
-      const [dayFrom, monthFrom, yearFrom] = fromDate.split('/').map(Number);
-      const [dayTo, monthTo, yearTo] = toDate.split('/').map(Number);
+      const [dayIn, monthIn, yearIn] = checkInText.split('/').map(Number);
+      const [dayOut, monthOut, yearOut] = checkOutText.split('/').map(Number);
       
-      const dateFromObj = new Date(yearFrom, monthFrom - 1, dayFrom);
-      const dateToObj = new Date(yearTo, monthTo - 1, dayTo);
+      const checkIn = new Date(yearIn, monthIn - 1, dayIn);
+      const checkOut = new Date(yearOut, monthOut - 1, dayOut);
       
-      const timeDiff = dateToObj.getTime() - dateFromObj.getTime();
+      const timeDiff = checkOut.getTime() - checkIn.getTime();
       const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
       return Math.max(0, daysDiff);
     } catch {
@@ -604,22 +598,21 @@ ${totalSection}
     }
   };
 
-  // Efecto para calcular noches automáticamente cuando cambian las fechas
+  // Efecto para actualizar numberOfNights cuando cambian las fechas
   useEffect(() => {
-    if (dateFrom && dateTo) {
-      const nights = calculateNightsBetweenDates(dateFrom, dateTo);
+    if (dateMode === 'dates') {
+      const nights = calculateNightsFromText(checkInDateText, checkOutDateText);
       setNumberOfNights(nights.toString());
     }
-  }, [dateFrom, dateTo]);
+  }, [dateMode, checkInDateText, checkOutDateText]);
 
   // Función para limpiar valores del formulario
   const clearFormValues = () => {
     setPricePerNight('');
     setNumberOfNights('');
     setNumberOfPeople('');
-    setShowCabinInfo(false);
-    setDateFrom('');
-    setDateTo('');
+    setCheckInDateText('');
+    setCheckOutDateText('');
     setDiscount(0);
     setComputed(null);
     setFeedbackMessage('');
@@ -924,86 +917,126 @@ ${totalSection}
               placeholderTextColor={theme.textSecondary}
             />
             
-            <Text style={[styles.label, { color: theme.text }]}>Cantidad de noches</Text>
-            <TextInput
-              style={[styles.input, { 
-                backgroundColor: theme.inputBackground, 
-                borderColor: theme.border, 
-                color: theme.text 
-              }]}
-              inputMode="numeric"
-              keyboardType="number-pad"
-              value={numberOfNights}
-              onChangeText={(t) => {
-                // Permitir solo números enteros
-                const cleaned = t.replace(/[^0-9]/g, '');
-                setNumberOfNights(cleaned);
-                // Limpiar fechas si se edita manualmente
-                if (cleaned !== numberOfNights) {
-                  setDateFrom('');
-                  setDateTo('');
-                }
-              }}
-              placeholder=""
-              placeholderTextColor={theme.textSecondary}
-            />
-
-            {/* Campos de fecha */}
-            <View style={styles.dateRow}>
-              <View style={styles.dateField}>
-                <Text style={[styles.label, { color: theme.text }]}>Desde</Text>
-                <TextInput
-                  style={[styles.input, { 
-                    backgroundColor: theme.inputBackground, 
-                    borderColor: theme.border, 
-                    color: theme.text 
-                  }]}
-                  value={dateFrom}
-                  onChangeText={(text) => {
-                    // Formatear automáticamente DD/MM/YYYY
-                    let formatted = text.replace(/\D/g, '');
-                    if (formatted.length >= 2) {
-                      formatted = formatted.substring(0, 2) + '/' + formatted.substring(2);
-                    }
-                    if (formatted.length >= 5) {
-                      formatted = formatted.substring(0, 5) + '/' + formatted.substring(5, 9);
-                    }
-                    setDateFrom(formatted);
-                  }}
-                  placeholder="15/12/2024"
-                  placeholderTextColor={theme.textSecondary}
-                  maxLength={10}
-                />
-              </View>
-              
-              <View style={styles.dateField}>
-                <Text style={[styles.label, { color: theme.text }]}>Hasta</Text>
-                <TextInput
-                  style={[styles.input, { 
-                    backgroundColor: theme.inputBackground, 
-                    borderColor: theme.border, 
-                    color: theme.text 
-                  }]}
-                  value={dateTo}
-                  onChangeText={(text) => {
-                    // Formatear automáticamente DD/MM/YYYY
-                    let formatted = text.replace(/\D/g, '');
-                    if (formatted.length >= 2) {
-                      formatted = formatted.substring(0, 2) + '/' + formatted.substring(2);
-                    }
-                    if (formatted.length >= 5) {
-                      formatted = formatted.substring(0, 5) + '/' + formatted.substring(5, 9);
-                    }
-                    setDateTo(formatted);
-                  }}
-                  placeholder="18/12/2024"
-                  placeholderTextColor={theme.textSecondary}
-                  maxLength={10}
-                />
-              </View>
+            {/* Toggle para modo de entrada de noches */}
+            <View style={styles.dateModeRow}>
+              <TouchableOpacity
+                style={[
+                  styles.dateModeButton,
+                  { 
+                    backgroundColor: dateMode === 'nights' ? seasonalColors.primary : theme.surface,
+                    borderColor: seasonalColors.primary 
+                  }
+                ]}
+                onPress={() => setDateMode('nights')}
+              >
+                <Text style={[
+                  styles.dateModeText,
+                  { color: dateMode === 'nights' ? '#ffffff' : seasonalColors.primary }
+                ]}>
+                  📝 Noches
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.dateModeButton,
+                  { 
+                    backgroundColor: dateMode === 'dates' ? seasonalColors.primary : theme.surface,
+                    borderColor: seasonalColors.primary 
+                  }
+                ]}
+                onPress={() => setDateMode('dates')}
+              >
+                <Text style={[
+                  styles.dateModeText,
+                  { color: dateMode === 'dates' ? '#ffffff' : seasonalColors.primary }
+                ]}>
+                  📅 Fechas
+                </Text>
+              </TouchableOpacity>
             </View>
 
-            {/* Cartel de noches calculadas eliminado */}
+            {dateMode === 'nights' ? (
+              // Modo manual: input de noches
+              <>
+                <Text style={[styles.label, { color: theme.text }]}>Cantidad de noches</Text>
+                <TextInput
+                  style={[styles.input, { 
+                    backgroundColor: theme.inputBackground, 
+                    borderColor: theme.border, 
+                    color: theme.text 
+                  }]}
+                  inputMode="numeric"
+                  keyboardType="number-pad"
+                  value={numberOfNights}
+                  onChangeText={(t) => {
+                    // Permitir solo números enteros
+                    const cleaned = t.replace(/[^0-9]/g, '');
+                    setNumberOfNights(cleaned);
+                  }}
+                  placeholder=""
+                  placeholderTextColor={theme.textSecondary}
+                />
+              </>
+            ) : (
+              // Modo fechas: inputs de texto para fechas
+              <>
+                <Text style={[styles.label, { color: theme.text }]}>Check-in (DD/MM/YYYY)</Text>
+                <TextInput
+                  style={[styles.input, { 
+                    backgroundColor: theme.inputBackground, 
+                    borderColor: theme.border, 
+                    color: theme.text 
+                  }]}
+                  value={checkInDateText}
+                  onChangeText={(text) => {
+                    // Formatear automáticamente DD/MM/YYYY
+                    let formatted = text.replace(/\D/g, '');
+                    if (formatted.length >= 2) {
+                      formatted = formatted.substring(0, 2) + '/' + formatted.substring(2);
+                    }
+                    if (formatted.length >= 5) {
+                      formatted = formatted.substring(0, 5) + '/' + formatted.substring(5, 9);
+                    }
+                    setCheckInDateText(formatted);
+                  }}
+                  placeholder="15/12/2025"
+                  placeholderTextColor={theme.textSecondary}
+                  maxLength={10}
+                />
+
+                <Text style={[styles.label, { color: theme.text, marginTop: 8 }]}>Check-out (DD/MM/YYYY)</Text>
+                <TextInput
+                  style={[styles.input, { 
+                    backgroundColor: theme.inputBackground, 
+                    borderColor: theme.border, 
+                    color: theme.text 
+                  }]}
+                  value={checkOutDateText}
+                  onChangeText={(text) => {
+                    // Formatear automáticamente DD/MM/YYYY
+                    let formatted = text.replace(/\D/g, '');
+                    if (formatted.length >= 2) {
+                      formatted = formatted.substring(0, 2) + '/' + formatted.substring(2);
+                    }
+                    if (formatted.length >= 5) {
+                      formatted = formatted.substring(0, 5) + '/' + formatted.substring(5, 9);
+                    }
+                    setCheckOutDateText(formatted);
+                  }}
+                  placeholder="18/12/2025"
+                  placeholderTextColor={theme.textSecondary}
+                  maxLength={10}
+                />
+
+                {numberOfNights > 0 && (
+                  <View style={[styles.nightsCalculated, { backgroundColor: seasonalColors.accent, marginTop: 8 }]}>
+                    <Text style={[styles.nightsCalculatedText, { color: seasonalColors.primary }]}>
+                      🌙 {numberOfNights} noche{numberOfNights > 1 ? 's' : ''}
+                    </Text>
+                  </View>
+                )}
+              </>
+            )}
 
             {suggestedStayDiscount !== null && suggestedStayDiscount > 0 && (
               <View style={[styles.helperRow, { backgroundColor: seasonalColors.accent, padding: 8, borderRadius: 8, marginBottom: 8 }]}>
@@ -1084,7 +1117,7 @@ ${totalSection}
               <View style={[styles.resultCard, { backgroundColor: theme.surface, borderLeftColor: theme.warning }]}>
                 <View style={styles.resultRow}>
                   <Text style={[styles.resultLabel, { color: theme.textSecondary }]}> 
-                    {formatARS(computed.pricePerNightCents)} × {computed.nights} noche{computed.nights > 1 ? 's' : ''}
+                    {formatARS(computed.pricePerNightCents)} × {computed.nights} noche{computed.nights > 1 ? 's' : ''}{showCabinInfo && numberOfPeople ? ` • Cabaña para ${numberOfPeople}` : ''}
                   </Text>
                   {discount === 0 && (
                     <TouchableOpacity
@@ -1432,18 +1465,7 @@ const styles = StyleSheet.create({
   seasonSwitchEmojiSmall: {
     fontSize: 14
   },
-  // Estilos para el botón de cabañas minimalista
-  cabinsButtonSimple: {
-    marginTop: 16,
-    paddingVertical: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    alignItems: 'center',
-  },
-  cabinsButtonSimpleText: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
+  // Estilos de cabañas eliminados
   // Estilo para la indicación de swipe
   swipeHint: {
     fontSize: 12,
@@ -1484,13 +1506,32 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
   },
-  // Estilos para campos de fecha
-  dateRow: {
+  // Estilos para selector de fechas
+  dateModeRow: {
     flexDirection: 'row',
-    gap: 12,
-    marginTop: 8,
+    marginBottom: 16,
+    gap: 8,
   },
-  dateField: {
+  dateModeButton: {
     flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: 'center',
+  },
+  dateModeText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  nightsCalculated: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    alignItems: 'center',
+  },
+  nightsCalculatedText: {
+    fontSize: 14,
+    fontWeight: '600',
   }
 });

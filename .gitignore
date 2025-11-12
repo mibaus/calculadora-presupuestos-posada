@@ -35,3 +35,12 @@ yarn-error.*
 
 # typescript
 *.tsbuildinfo
+
+# Expo
+.expo
+dist/
+web-build/
+
+# Android keystore
+/android/keystore.properties
+/android/app/*-release-key.keystore

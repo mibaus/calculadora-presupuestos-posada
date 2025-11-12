@@ -1,29 +1,44 @@
 {
   "expo": {
-    "name": "reservas-cabanas",
+    "name": "Calcular pagos",
     "slug": "reservas-cabanas",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
-    "newArchEnabled": true,
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": false,
+    "jsEngine": "hermes",
+    "runtimeVersion": "exposdk:53.0.0",
+    "cli": {
+      "appVersionSource": "local"
+    },
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": false,
+      "bundleIdentifier": "com.reservascabanas.app",
+      "buildNumber": "1"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "package": "com.reservascabanas.app",
+      "versionCode": 2,
+      "permissions": []
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "a7ca893a-d1ce-495b-bca3-336a0568a607"
+      }
+    },
+    "owner": "miribaus"
   }
 }
