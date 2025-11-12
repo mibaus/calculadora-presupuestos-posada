@@ -1041,7 +1041,7 @@ export default function App() {
             {suggestedStayDiscount !== null && suggestedStayDiscount > 0 && (
               <View style={[styles.helperRow, { backgroundColor: seasonalColors.accent, padding: 8, borderRadius: 8, marginBottom: 8 }]}>
                 <Text style={[styles.helperText, { color: seasonalColors.primary, fontWeight: '600' }]}>Descuento por estadía: {suggestedStayDiscount}%</Text>
-                {season !== 'spring' && (
+                {season === 'summer' || season === 'autumn' ? (
                   <TouchableOpacity
                     style={[styles.helperBtn, { backgroundColor: seasonalColors.primary, borderColor: seasonalColors.primary }]}
                     onPress={() => {
@@ -1051,7 +1051,7 @@ export default function App() {
                   >
                     <Text style={[styles.helperBtnText, { color: '#ffffff' }]}>Aplicar</Text>
                   </TouchableOpacity>
-                )}
+                ) : null}
               </View>
             )}
             
